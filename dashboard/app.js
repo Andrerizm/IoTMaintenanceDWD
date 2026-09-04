@@ -867,7 +867,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function connectSSE() {
       try {
-        const evtSource = new EventSource('/api/telemetry/stream');
+        const origin = (typeof getBackendOrigin === 'function') ? getBackendOrigin() : '';
+        const evtSource = new EventSource(`${origin}/api/telemetry/stream`);
 
         evtSource.addEventListener('telemetry_tick', () => {
           sseConnected = true;

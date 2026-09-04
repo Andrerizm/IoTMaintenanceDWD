@@ -2,10 +2,26 @@
 // AUTH.JS — Client-side API Auth Client untuk Backend Node.js Express
 // ============================================================================
 
+function getBackendOrigin() {
+  if (typeof window === 'undefined') return '';
+  // Jika dibuka lewat file:/// langsung
+  if (window.location.protocol === 'file:') {
+    return 'http://localhost:3000';
+  }
+  // Jika dibuka lewat Live Server (misal port 5500)
+  if (window.location.port && window.location.port !== '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return `http://${window.location.hostname}:3000`;
+  }
+  return '';
+}
+window.getBackendOrigin = getBackendOrigin;
+
 const AUTH_CONFIG = {
   TOKEN_KEY: 'bekaert_jwt_token',
   USER_KEY: 'bekaert_user_info',
-  API_BASE: '/api/auth'
+  get API_BASE() {
+    return `${getBackendOrigin()}/api/auth`;
+  }
 };
 
 function getToken() {
@@ -57,9 +73,15 @@ async function attemptLogin(identifier, password) {
     return { success: true, session: data.user };
   } catch (err) {
     console.error('Login error:', err);
+    let msg = 'Tidak dapat terhubung ke Backend Server (http://localhost:3000).';
+    if (window.location.protocol === 'file:') {
+      msg = '⚠️ Halaman dibuka via file://. Browser memblokir koneksi ke server. Silakan buka browser dan akses melalui: http://localhost:3000';
+    } else if (window.location.port && window.location.port !== '3000') {
+      msg = `⚠️ Halaman dibuka di port ${window.location.port}. Silakan buka langsung di: http://localhost:3000`;
+    }
     return {
       success: false,
-      error: 'Tidak dapat terhubung ke Backend Server (http://localhost:3000).'
+      error: msg
     };
   }
 }
@@ -86,9 +108,13 @@ async function attemptRegister(username, email, password, displayName) {
     return { success: true, session: data.user };
   } catch (err) {
     console.error('Register error:', err);
+    let msg = 'Tidak dapat terhubung ke Backend Server (http://localhost:3000).';
+    if (window.location.protocol === 'file:') {
+      msg = '⚠️ Halaman dibuka via file://. Browser memblokir koneksi ke server. Silakan buka browser dan akses melalui: http://localhost:3000';
+    }
     return {
       success: false,
-      error: 'Tidak dapat terhubung ke Backend Server (http://localhost:3000).'
+      error: msg
     };
   }
 }
@@ -112,7 +138,11 @@ async function apiFetch(url, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, { ...options, headers });
+  const finalUrl = (url.startsWith('/api') || url.startsWith('/'))
+    ? `${getBackendOrigin()}${url}`
+    : url;
+
+  const response = await fetch(finalUrl, { ...options, headers });
   
   if (response.status === 401 || response.status === 403) {
     const errorData = await response.json().catch(() => ({}));
