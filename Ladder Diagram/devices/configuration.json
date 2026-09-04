@@ -1,0 +1,10 @@
+{
+  "deviceBoard": "OpenPLC Simulator",
+  "communicationPort": "",
+  "runtimeIpAddress": "",
+  "vendorScreenData": {},
+  "vendorScreenDataByBoard": {
+    "OpenPLC Simulator": {}
+  },
+  "selectedPlatformOptions": {}
+}

@@ -1,0 +1,115 @@
+const db = require('../database');
+
+const sseClients = new Set();
+
+function broadcastSSE(event, data) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(payload);
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+}
+
+let simulationInterval = null;
+let intervalSeconds = 6;
+
+function startSimulation(seconds = 6) {
+  if (simulationInterval) clearInterval(simulationInterval);
+  intervalSeconds = seconds;
+
+  simulationInterval = setInterval(() => {
+    simulateCycle();
+  }, intervalSeconds * 1000);
+}
+
+function setSimulationInterval(seconds) {
+  startSimulation(seconds);
+}
+
+function simulateCycle() {
+  const selectStmt = db.prepare('SELECT * FROM motors');
+  const motors = selectStmt.all();
+
+  const updateStmt = db.prepare(`
+    UPDATE motors
+    SET current = ?, voltage = ?, capacitance = ?, power = ?, pf = ?, error = ?, esp_temp = ?, motor_status = ?, status = ?, updated_at = ?
+    WHERE id = ?
+  `);
+
+  const historyStmt = db.prepare(`
+    INSERT INTO telemetry_history (motor_id, capacitance, current, voltage, power, pf, esp_temp, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const NOMINAL = 2.0;
+  const FREQ = 50;
+  const now = new Date();
+  const timeStr = now.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' });
+  const timestampIso = now.toISOString();
+
+  try {
+    db.exec('BEGIN TRANSACTION;');
+
+    motors.forEach(m => {
+      const motorStatus = Math.random() < 0.12 ? 'OFF' : 'ON';
+      let current, voltage, capacitance, error, status, pf, power;
+      const espTemp = Number((42.0 + Math.random() * 12.0).toFixed(1)); // 42.0 - 54.0 °C
+
+      if (motorStatus === 'OFF') {
+        current = 0;
+        voltage = m.voltage;
+        capacitance = m.capacitance;
+        error = m.error;
+        pf = 0;
+        power = 0;
+        status = 'OFF';
+      } else {
+        capacitance = Math.max(NOMINAL * 0.55, m.capacitance * (1 - Math.random() * 0.004));
+        voltage = 215 + Math.random() * 37;
+        const expectedCurrent = 2 * Math.PI * FREQ * (capacitance / 1000000) * voltage;
+        current = expectedCurrent * (0.975 + Math.random() * 0.05);
+        const measuredCap = (current / (2 * Math.PI * FREQ * voltage)) * 1000000;
+        error = (measuredCap < NOMINAL) ? ((NOMINAL - measuredCap) / NOMINAL) * 100 : 0;
+        pf = Number((0.92 + Math.random() * 0.06).toFixed(2));
+        power = Number((voltage * current * pf).toFixed(1));
+
+        let warningLimit = 5.0;
+        let dangerLimit = 10.0;
+        try {
+          const sRows = db.prepare('SELECT key, value FROM settings').all();
+          sRows.forEach(r => {
+            if (r.key === 'warning_limit') warningLimit = parseFloat(r.value) || 5.0;
+            else if (r.key === 'danger_limit') dangerLimit = parseFloat(r.value) || 10.0;
+          });
+        } catch(e){}
+
+        if (error >= dangerLimit) status = 'DANGER';
+        else if (error >= warningLimit) status = 'WARNING';
+        else status = 'NORMAL';
+
+        capacitance = measuredCap;
+      }
+
+      updateStmt.run(current, voltage, capacitance, power, pf, error, espTemp, motorStatus, status, timeStr, m.id);
+      historyStmt.run(m.id, Number(capacitance.toFixed(2)), Number(current.toFixed(3)), Number(voltage.toFixed(1)), power, pf, espTemp, timestampIso);
+    });
+
+    db.exec('COMMIT;');
+  } catch (err) {
+    try { db.exec('ROLLBACK;'); } catch (_) {}
+    console.error('Error during simulation cycle:', err);
+  }
+
+  // Broadcast event cycle_complete to all SSE clients
+  broadcastSSE('telemetry_tick', { timestamp: timestampIso });
+}
+
+module.exports = {
+  sseClients,
+  broadcastSSE,
+  startSimulation,
+  setSimulationInterval
+};

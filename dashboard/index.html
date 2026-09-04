@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta name="referrer" content="no-referrer" />
+  <title>IoT Maintenance DWD — Motor Stirrer Monitoring</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+    integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+    integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"
+    integrity="sha512-PRJxIx+FR3gPzyBBl9cPt62DD7owFXVcfYv0CRNFAcLZeEYfht/PpPNTKHicPs+hQlULFhH2tTWdoxnd1UGu1g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="assets/logo.png" alt="Logo Bekaert" class="login-logo-img" id="loginLogoImg" />
+        <div class="login-logo-icon" id="loginFallbackIcon" style="display:none;">B</div>
+        <div class="login-logo-text">
+          <div class="login-company">IoT Maintenance DWD</div>
+          <div class="login-system">Motor Capacitor Monitoring System</div>
+        </div>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" data-tab="login">Masuk</button>
+        <button class="auth-tab" id="tabRegister" data-tab="register">Daftar Baru</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" autocomplete="on">
+        <div class="login-field">
+          <label for="loginIdentifier">Username atau Email</label>
+          <input type="text" id="loginIdentifier" name="username" placeholder="Masukkan username atau email" autocomplete="username" required />
+        </div>
+        <div class="login-field">
+          <label for="loginPassword">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="loginPassword" name="password" placeholder="Masukkan password" autocomplete="current-password" required />
+            <button type="button" class="toggle-password" data-target="loginPassword" title="Lihat Password">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="login-btn" id="btnLogin">🔐 MASUK KE DASHBOARD</button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="registerForm" style="display:none;" autocomplete="on">
+        <div class="domain-notice">
+          ⓘ Registrasi hanya tersedia untuk karyawan dengan email perusahaan berdomain <strong>@polban.ac.id</strong> atau <strong>@bekaert.com</strong>.
+        </div>
+        <div class="login-field">
+          <label for="regUsername">Username</label>
+          <input type="text" id="regUsername" name="username" placeholder="min. 3 karakter" autocomplete="username" required />
+        </div>
+        <div class="login-field">
+          <label for="regEmail">Email Perusahaan</label>
+          <input type="email" id="regEmail" name="email" placeholder="nama@bekaert.com" autocomplete="email" required />
+        </div>
+        <div class="login-field">
+          <label for="regDisplayName">Nama Tampilan</label>
+          <input type="text" id="regDisplayName" name="displayName" placeholder="Nama lengkap Anda" autocomplete="name" />
+        </div>
+        <div class="login-field">
+          <label for="regPassword">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="regPassword" name="new-password" placeholder="min. 4 karakter" autocomplete="new-password" required />
+            <button type="button" class="toggle-password" data-target="regPassword" title="Lihat Password">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="login-btn" id="btnRegister">📝 DAFTAR & MASUK</button>
+      </form>
+
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- SESSION TIMEOUT TOAST -->
+  <div class="session-toast" id="sessionToast">⏱️ Sesi Anda telah berakhir. Silakan login kembali.</div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="dashboardContent" class="hidden">
+  <div class="topbar">
+    <div class="brand-group">
+      <img src="assets/logo.png" alt="Logo Bekaert" class="brand-logo" id="brandLogo" />
+      <div class="brand-logo-fallback" id="logoFallback" style="display:none;">B</div>
+      <div class="brand-text">
+        <div class="company">IoT Maintenance DWD</div>
+        <div class="division">www.IoTMaintenceDWD.co.id</div>
+      </div>
+      <div class="title-divider"></div>
+      <div class="title-group">
+        <h1>Motor Stirrer Monitoring</h1>
+        <p id="subtitle">30 MESIN (300 MOTOR) / PZEM-004T / DUTY CYCLE 30M DETEKSI PER 1 JAM</p>
+      </div>
+    </div>
+    <div class="user-info">
+      <div class="status" style="margin-right:6px">
+        <div class="status-dot online" id="statusDot"></div>
+        <span id="statusText">SIAP MENERIMA DATA ESP32</span>
+      </div>
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-meta">
+          <span class="user-name" id="userName">—</span>
+          <span class="user-role" id="userRole">—</span>
+        </div>
+      </div>
+      <button class="btn-admin hidden" id="btnAddMotorModal">➕ Tambah Motor</button>
+      <button class="btn-admin hidden" id="btnSettings">⚙️ Ambang Batas</button>
+      <button class="btn-admin hidden" id="btnAuditLog">📋 Audit Log</button>
+      <button class="btn-admin hidden" id="btnUserMgmt">👥 Kelola User</button>
+      <button class="btn-logout hidden" id="btnLogout">Logout</button>
+    </div>
+  </div>
+
+  <div class="anomaly-banner" id="anomalyBanner">
+    ⚠️ PERINGATAN: TERDETEKSI KAPASITOR MOTOR DI BAWAH BATAS NORMAL!
+  </div>
+  <div class="anomaly-banner banner-disconnected" id="sensorDisconnectBanner" style="display:none; background: rgba(255, 152, 0, 0.95); color: #ffffff;">
+    ⚡ PERINGATAN: KABEL SENSOR PZEM KEPADA ESP32 TERPUTUS! (STATUS: SENSOR DISCONNECTED)
+  </div>
+  <div class="anomaly-banner banner-disconnected" id="espOfflineBanner" style="display:none; background: rgba(255, 77, 77, 0.95); color: #ffffff;">
+    🔌 PERINGATAN: HARDWARE ESP32 MATI TOTAL / KONEKSI WIFI TERPUTUS! (STATUS: ESP32 OFFLINE)
+  </div>
+
+  <div class="summary-strip">
+    <div class="summary-item"><span>Total Motor</span><strong id="sumTotal">1</strong></div>
+    <div class="summary-item"><span>Normal</span><strong id="sumNormal">0</strong></div>
+    <div class="summary-item"><span>Warning</span><strong id="sumWarning">0</strong></div>
+    <div class="summary-item"><span>Danger</span><strong id="sumDanger">0</strong></div>
+    <div class="summary-item"><span>Motor OFF</span><strong id="sumOff">0</strong></div>
+    <div class="summary-item summary-disconnected"><span>Sensor Terputus</span><strong id="sumDisconnected" style="color:var(--red,#ff4d4d)">0</strong></div>
+  </div>
+
+
+
+  <div id="viewMachines">
+    <div class="chart-panel-header" style="margin-bottom: 20px;">
+      <div>
+        <div class="chart-panel-label">Dashboard Utama</div>
+        <div class="panel-subtitle">Pilih kotak mesin untuk melihat daftar motor di dalamnya.</div>
+      </div>
+    </div>
+    <div class="dynamic-grid" id="machineGrid"></div>
+  </div>
+
+  <div id="viewMotors" class="hidden">
+    <div class="back-nav">
+      <button class="chart-btn" id="btnBackToMachines">⬅ KEMBALI KE DAFTAR MESIN</button>
+      <div>
+        <div class="chart-panel-label" id="motorViewTitle">MESIN XX</div>
+        <div class="panel-subtitle">Pilih kotak motor untuk melihat detail sensor dan grafik tren.</div>
+      </div>
+    </div>
+    <div class="dynamic-grid" id="motorGrid"></div>
+
+    <div class="chart-panel" style="margin-top: 24px;">
+      <div class="chart-panel-header">
+        <div>
+          <div class="chart-panel-label">📈 Komparasi Laju Degradasi Multi-Motor</div>
+          <div class="panel-subtitle" id="compareSubtitle">Centang motor di atas untuk membandingkan laju degradasi secara langsung.</div>
+        </div>
+        <div class="chart-controls">
+          <span class="settings-label">Pilih Metrik Komparasi:</span>
+          <select id="compareMetricSelect" class="chart-select">
+            <option value="capacitance">Kapasitansi (µF)</option>
+            <option value="error">Persentase Error (%)</option>
+            <option value="current">Arus Kapasitor (A)</option>
+            <option value="voltage">Tegangan Kapasitor (V)</option>
+            <option value="power">Daya (W)</option>
+            <option value="pf">Power Factor / Faktor Daya</option>
+            <option value="espTemp">Suhu ESP32 (°C)</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-container" style="height: 340px;">
+        <canvas id="compareChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewDetails" class="hidden">
+    <div class="back-nav">
+      <button class="chart-btn" id="btnBackToMotors">⬅ KEMBALI KE DAFTAR MOTOR</button>
+      <div>
+        <div class="chart-panel-label" id="detailViewTitle">DETAIL MOTOR</div>
+        <div class="panel-subtitle" id="detailSubtitle">Menampilkan data pembacaan langsung dari sensor</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card accent-capacitance" id="cardCapacitance">
+        <div class="card-label">Estimasi Kapasitansi</div>
+        <div class="card-value"><span id="capValue">--</span><span class="unit">µF</span></div>
+        <div class="card-meta" id="capMeta">Nominal: -- µF / Error: --%</div>
+        <div class="segbar" id="capBar"></div>
+      </div>
+      <div class="card accent-current" id="cardCurrent">
+        <div class="card-label">Arus Kapasitor</div>
+        <div class="card-value"><span id="currentValue">--</span><span class="unit">A</span></div>
+        <div class="card-meta">Dibaca oleh sensor PZEM-004T</div>
+        <div class="segbar" id="currentBar"></div>
+      </div>
+      <div class="card accent-voltage" id="cardVoltage">
+        <div class="card-label">Tegangan Kapasitor</div>
+        <div class="card-value"><span id="voltageValue">--</span><span class="unit">V</span></div>
+        <div class="card-meta">Dibaca oleh sensor PZEM-004T (terminal kapasitor)</div>
+        <div class="segbar" id="voltageBar"></div>
+      </div>
+      <div class="card accent-esptemp" id="cardEspTemp">
+        <div class="card-label">Suhu Internal ESP32</div>
+        <div class="card-value"><span id="espTempValue">--</span><span class="unit">°C</span></div>
+        <div class="card-meta" id="espTempMeta">Status Chip: Normal (&lt; 70°C)</div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <div>
+          <div class="chart-panel-label">Riwayat Real-time Kapasitansi</div>
+          <div class="panel-subtitle" id="rangeInfo">Menampilkan seluruh data historis yang tersimpan</div>
+        </div>
+        <div class="chart-controls">
+          <select id="chartTypeSelect" class="chart-select">
+            <option value="line">Grafik Garis</option>
+            <option value="bar">Grafik Batang</option>
+            <option value="area">Grafik Area</option>
+          </select>
+          <button id="btnDownloadPDF" class="chart-btn btn-pdf">Cetak PDF</button>
+          <button id="btnDownloadExcel" class="chart-btn btn-excel">📊 Export Excel</button>
+        </div>
+      </div>
+      <div class="chart-controls" style="margin-bottom: 10px;">
+        <span class="settings-label">Tampilkan</span>
+        <label style="margin-right:10px; cursor:pointer;"><input type="checkbox" class="toggle-ds" data-index="0" checked> Kapasitansi</label>
+        <label style="margin-right:10px; cursor:pointer;"><input type="checkbox" class="toggle-ds" data-index="1" checked> Arus</label>
+        <label style="margin-right:10px; cursor:pointer;"><input type="checkbox" class="toggle-ds" data-index="2" checked> Tegangan</label>
+        <label style="margin-right:10px; cursor:pointer;"><input type="checkbox" class="toggle-ds" data-index="3" checked> Daya</label>
+        <label style="cursor:pointer;"><input type="checkbox" class="toggle-ds" data-index="4" checked> PF</label>
+      </div>
+      <div class="chart-controls" style="margin-bottom: 10px;">
+        <span class="settings-label">Time Frame</span>
+        <button class="chart-btn tf-btn" data-hours="1">1 Jam</button>
+        <button class="chart-btn tf-btn" data-hours="6">6 Jam</button>
+        <button class="chart-btn tf-btn" data-hours="12">12 Jam</button>
+        <button class="chart-btn tf-btn" data-hours="24">24 Jam</button>
+        <button class="chart-btn tf-btn active" data-hours="0">Semua</button>
+      </div>
+      <div class="chart-controls" style="margin-bottom: 14px;">
+        <span class="settings-label">Dari</span>
+        <input type="datetime-local" id="rangeFrom" class="chart-input" />
+        <span class="settings-label">Sampai</span>
+        <input type="datetime-local" id="rangeTo" class="chart-input" />
+        <button id="btnApplyRange" class="chart-btn">Terapkan</button>
+        <button id="btnResetRange" class="chart-btn btn-reset">Reset</button>
+      </div>
+      <div class="chart-container">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <div class="table-panel">
+      <div class="chart-panel-header">
+        <div class="chart-panel-label">Daftar Status Motor pada Mesin Terpilih</div>
+        <div class="chart-controls">
+          <button id="btnExportPDF" class="chart-btn">Export PDF Mesin Ini</button>
+          <button id="btnExportExcel" class="chart-btn btn-excel">📊 Export Excel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Motor</th>
+              <th>Status Motor</th>
+              <th>Nominal</th>
+              <th>Kapasitansi</th>
+              <th>Error</th>
+              <th>Arus C</th>
+              <th>Tegangan C</th>
+              <th>Suhu ESP32</th>
+              <th>Status Kapasitor</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody id="motorTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIT LOG PANEL (Admin only) -->
+  <div id="viewAuditLog" class="hidden">
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <div>
+          <div class="admin-panel-label">📋 Audit Log</div>
+          <div class="panel-subtitle">Riwayat aktivitas pengguna pada dashboard</div>
+        </div>
+        <div class="admin-controls">
+          <button class="chart-btn" id="btnRefreshAudit">Refresh</button>
+          <button class="chart-btn btn-pdf" id="btnExportAudit">Export JSON</button>
+          <button class="chart-btn btn-reset" id="btnClearAudit">Hapus Semua</button>
+          <button class="chart-btn" id="btnCloseAudit">✕ Tutup</button>
+        </div>
+      </div>
+      <div class="audit-filter-bar">
+        <span class="settings-label">Filter:</span>
+        <input type="text" id="auditFilterAction" class="chart-input" placeholder="Aksi..." />
+        <input type="text" id="auditFilterUser" class="chart-input" placeholder="Username..." />
+        <button class="chart-btn" id="btnApplyAuditFilter">Terapkan</button>
+        <button class="chart-btn btn-reset" id="btnResetAuditFilter">Reset</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>User</th>
+              <th>Aksi</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER MANAGEMENT PANEL (Admin only) -->
+  <div id="viewUserMgmt" class="hidden">
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <div>
+          <div class="admin-panel-label">👥 Manajemen User</div>
+          <div class="panel-subtitle">Tambah, hapus, dan kelola akun pengguna</div>
+        </div>
+        <div class="admin-controls">
+          <button class="chart-btn" id="btnCloseUserMgmt">✕ Tutup</button>
+        </div>
+      </div>
+      <div class="add-user-form">
+        <div class="form-group">
+          <label for="newUsername">Username</label>
+          <input type="text" id="newUsername" placeholder="min. 3 karakter" />
+        </div>
+        <div class="form-group">
+          <label for="newEmail">Email Perusahaan</label>
+          <input type="email" id="newEmail" placeholder="user@polban.ac.id / user@bekaert.com" />
+        </div>
+        <div class="form-group">
+          <label for="newDisplayName">Nama Tampilan</label>
+          <input type="text" id="newDisplayName" placeholder="Nama lengkap" />
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Password</label>
+          <input type="password" id="newPassword" placeholder="min. 4 karakter" />
+        </div>
+        <div class="form-group">
+          <label for="newRole">Role</label>
+          <select id="newRole">
+            <option value="Operator">Operator</option>
+            <option value="Maintenance Shift">Maintenance Shift</option>
+            <option value="Maintenance Non Shift">Maintenance Non Shift</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Manajer">Manajer</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <button class="chart-btn" id="btnAddUser">+ Tambah User</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Nama Tampilan</th>
+              <th>Role</th>
+              <th>Dibuat</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="userMgmtTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS PANEL (Admin & Supervisor) -->
+  <div id="viewSettings" class="hidden">
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <div>
+          <div class="admin-panel-label">⚙️ Pengaturan Ambang Batas Alarm</div>
+          <div class="panel-subtitle">Sesuaikan nilai ambang batas toleransi error dan suhu ESP32</div>
+        </div>
+        <div class="admin-controls">
+          <button class="chart-btn" id="btnCloseSettings">✕ Tutup</button>
+        </div>
+      </div>
+      <div class="add-user-form" style="grid-template-columns: repeat(2, 1fr); max-width: 600px;">
+        <div class="form-group">
+          <label for="setWarningLimit">Batas Warning Error Kapasitor (%)</label>
+          <input type="number" step="0.5" id="setWarningLimit" placeholder="contoh: 5.0" />
+        </div>
+        <div class="form-group">
+          <label for="setDangerLimit">Batas Danger Error Kapasitor (%)</label>
+          <input type="number" step="0.5" id="setDangerLimit" placeholder="contoh: 10.0" />
+        </div>
+        <div class="form-group">
+          <label for="setEspTempWarning">Batas Warning Suhu ESP32 (°C)</label>
+          <input type="number" step="1" id="setEspTempWarning" placeholder="contoh: 70" />
+        </div>
+        <div class="form-group">
+          <label for="setEspTempDanger">Batas Danger Suhu ESP32 (°C)</label>
+          <input type="number" step="1" id="setEspTempDanger" placeholder="contoh: 80" />
+        </div>
+        <div style="grid-column: span 2; display: flex; gap: 12px; margin-top: 12px;">
+          <button class="chart-btn" id="btnSaveSettings" style="flex: 1;">💾 Simpan Pengaturan</button>
+          <button class="chart-btn btn-reset" id="btnResetSettingsDefault" style="flex: 1;">🔄 Reset Default</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD MOTOR PANEL (Admin & Supervisor) -->
+  <div id="viewAddMotor" class="hidden">
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <div>
+          <div class="admin-panel-label">➕ Registrasi Mesin & Motor Baru</div>
+          <div class="panel-subtitle">Daftarkan unit mesin & motor pemantauan baru secara manual</div>
+        </div>
+        <div class="admin-controls">
+          <button class="chart-btn" id="btnCloseAddMotor">✕ Tutup</button>
+        </div>
+      </div>
+      <form id="formAddMotor" class="add-user-form" style="grid-template-columns: repeat(2, 1fr); max-width: 600px;">
+        <div class="form-group">
+          <label for="newMachineId">Nomor Mesin (1 - 99)</label>
+          <input type="number" min="1" max="99" id="newMachineId" placeholder="contoh: 31" required />
+        </div>
+        <div class="form-group">
+          <label for="newMotorNo">Nomor Motor (1 - 99)</label>
+          <input type="number" min="1" max="99" id="newMotorNo" placeholder="contoh: 1" required />
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="newNominalCap">Kapasitansi Nominal (µF)</label>
+          <input type="number" step="0.1" id="newNominalCap" placeholder="contoh: 2.0" value="2.0" required />
+        </div>
+        <div style="grid-column: span 2; display: flex; gap: 12px; margin-top: 12px;">
+          <button type="submit" class="chart-btn" style="flex: 1;">💾 Simpan Motor Baru</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  </div><!-- end #dashboardContent -->
+
+  <p class="footer-note">© 2026 IoT Maintenance DWD — www.IoTMaintenceDWD.co.id | Formula: CµF = I / (2 × π × f × V) × 1.000.000. Arus (I) dan tegangan (V) diperoleh dari sensor
+    PZEM-004T. Dashboard ini menggunakan sistem Drill-down 3 Lapis.</p>
+
+  <script src="auth.js"></script>
+  <script src="audit.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
