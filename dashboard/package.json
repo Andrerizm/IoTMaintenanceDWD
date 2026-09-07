@@ -1,7 +1,7 @@
 {
   "name": "iot-maintenance-dwd",
   "version": "1.0.0",
-  "description": "IoT Maintenance DWD — Motor Capacitor Health Monitoring System (www.IoTMaintenceDWD.co.id)",
+  "description": "IoT Maintenance DWD — Motor Stirrer Health Monitoring System (www.IoTMaintenceDWD.co.id)",
   "main": "server/index.js",
   "type": "commonjs",
   "scripts": {

@@ -745,10 +745,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const target = tab.dataset.tab;
-      document.getElementById('loginForm').style.display = target === 'login' ? 'block' : 'none';
-      document.getElementById('registerForm').style.display = target === 'register' ? 'block' : 'none';
-      document.getElementById('loginError').classList.remove('visible');
-      document.getElementById('loginError').textContent = '';
+      const loginFormEl = document.getElementById('loginForm');
+      const regFormEl = document.getElementById('registerForm');
+      if (loginFormEl) loginFormEl.style.display = target === 'login' ? 'block' : 'none';
+      if (regFormEl) regFormEl.style.display = target === 'register' ? 'block' : 'none';
+      const errEl = document.getElementById('loginError');
+      if (errEl) { errEl.classList.remove('visible'); errEl.textContent = ''; }
     });
   });
 
@@ -787,33 +789,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // --- Register Form Submit ---
-  document.getElementById('registerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('regUsername').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const displayName = document.getElementById('regDisplayName').value.trim();
-    const password = document.getElementById('regPassword').value;
+  // --- Register Form Submit (if present) ---
+  const registerFormEl = document.getElementById('registerForm');
+  if (registerFormEl) {
+    registerFormEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const displayName = document.getElementById('regDisplayName').value.trim();
+      const password = document.getElementById('regPassword').value;
 
-    if (!username || !email || !password) { showLoginError('Username, email, dan password wajib diisi.'); return; }
-    if (username.length < 3) { showLoginError('Username minimal 3 karakter.'); return; }
-    if (password.length < 4) { showLoginError('Password minimal 4 karakter.'); return; }
+      if (!username || !email || !password) { showLoginError('Username, email, dan password wajib diisi.'); return; }
+      if (username.length < 3) { showLoginError('Username minimal 3 karakter.'); return; }
+      if (password.length < 4) { showLoginError('Password minimal 4 karakter.'); return; }
 
-    const btn = document.getElementById('btnRegister');
-    btn.disabled = true;
-    btn.textContent = '⏳ Mendaftar...';
+      const btn = document.getElementById('btnRegister');
+      btn.disabled = true;
+      btn.textContent = '⏳ Mendaftar...';
 
-    const result = await attemptRegister(username, email, password, displayName);
-    btn.disabled = false;
-    btn.textContent = '📝 DAFTAR & MASUK';
+      const result = await attemptRegister(username, email, password, displayName);
+      btn.disabled = false;
+      btn.textContent = '📝 DAFTAR & MASUK';
 
-    if (result.success) {
-      hideLoginOverlay();
-      showDashboard(result.session);
-    } else {
-      showLoginError(result.error);
-    }
-  });
+      if (result.success) {
+        hideLoginOverlay();
+        showDashboard(result.session);
+      } else {
+        showLoginError(result.error);
+      }
+    });
+  }
 
   // --- Check Existing Session ---
   const existingSession = getSession();
@@ -927,15 +932,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     overlay.classList.remove('fade-out');
     document.getElementById('dashboardContent').classList.add('hidden');
     // Reset login form
-    document.getElementById('loginForm').reset();
-    document.getElementById('registerForm').reset();
-    document.getElementById('loginError').classList.remove('visible');
-    document.getElementById('loginError').textContent = '';
-    // Reset tabs to login
+    document.getElementById('loginForm')?.reset();
+    document.getElementById('registerForm')?.reset();
+    const loginErr = document.getElementById('loginError');
+    if (loginErr) { loginErr.classList.remove('visible'); loginErr.textContent = ''; }
+    // Reset tabs if present
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('tabLogin').classList.add('active');
-    document.getElementById('loginForm').style.display = 'block';
-    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('tabLogin')?.classList.add('active');
+    const loginFormEl = document.getElementById('loginForm');
+    if (loginFormEl) loginFormEl.style.display = 'block';
+    const regFormEl = document.getElementById('registerForm');
+    if (regFormEl) regFormEl.style.display = 'none';
   });
 
   // --- Navigation buttons ---

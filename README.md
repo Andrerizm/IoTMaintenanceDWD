@@ -1,67 +1,67 @@
-# IoT Motor Capacitor Monitoring System
+# IoT Motor Stirrer Monitoring System
 ### PT Bekaert Indonesia & Politeknik Negeri Bandung (POLBAN)
 
-Sistem Pemantauan Kesehatan Kapasitor Motor Listrik secara *real-time* berbasis IoT untuk mesin drawing/stirrer di lini produksi industri. Sistem ini mengintegrasikan mikrokontroler **ESP32**, modul sensor daya **PZEM-004T**, dan **Web Dashboard Fullstack (Node.js + Express + SQLite + Server-Sent Events)**.
+A real-time IoT-based Industrial Motor Stirrer Monitoring System designed for wire drawing / stirrer machinery across industrial production lines. This system integrates an **ESP32** microcontroller, **PZEM-004T** electrical power sensor modules, and a **Fullstack Web Dashboard (Node.js + Express + SQLite + Server-Sent Events)**.
 
 ---
 
-## 📂 Struktur Repositori
+## 📂 Repository Structure
 
 ```text
-├── ESP32_PZEM004T/          # Firmware ESP32 (Arduino C++)
-│   └── ESP32_PZEM004T.ino   # Program sensor PZEM-004T, LittleFS buffer, NTP, thermal monitor
-├── dashboard/               # Aplikasi Web Monitoring (Fullstack)
-│   ├── index.html           # Tampilan antarmuka Dashboard
-│   ├── app.js               # Logika klien & visualisasi Chart.js
-│   ├── style.css            # Desain UI / Dark & Industrial theme
-│   ├── auth.js & audit.js   # Autentikasi JWT & audit logger klien
-│   ├── package.json         # Dependensi Node.js
-│   └── server/              # Backend Express & SQLite database engine
-├── Blok Diagram.vsdx        # Diagram blok arsitektur sistem
-├── Wiring Diagram.vsdx      # Diagram pengkabelan sensor PZEM-004T & ESP32
-├── Flowchart/               # Diagram alir logika sistem & firmware
-├── Ladder Diagram/          # Diagram kontrol PLC/Ladder pendukung
-├── PPT/                     # Materi presentasi proyek
-└── Proposal & RAB/          # Dokumen proposal teknis dan rancangan anggaran
+├── ESP32_PZEM004T/          # ESP32 Firmware (Arduino C++)
+│   └── ESP32_PZEM004T.ino   # PZEM-004T sensor program, LittleFS offline buffer, NTP, thermal monitor
+├── dashboard/               # Monitoring Web Application (Fullstack)
+│   ├── index.html           # Dashboard UI interface
+│   ├── app.js               # Client-side logic & Chart.js visualization
+│   ├── style.css            # UI Design / Dark & Industrial theme
+│   ├── auth.js & audit.js   # JWT Authentication & Client audit logger
+│   ├── package.json         # Node.js dependencies
+│   └── server/              # Express backend & SQLite database engine
+├── Blok Diagram.vsdx        # System architecture block diagram
+├── Wiring Diagram.vsdx      # PZEM-004T sensor & ESP32 wiring diagram
+├── Flowchart/               # System & firmware logic flowchart
+├── Ladder Diagram/          # Supporting PLC / Ladder control diagrams
+├── PPT/                     # Project presentation materials
+└── Proposal & RAB/          # Technical project proposal and budget plan
 ```
 
 ---
 
-## 🚀 Fitur Utama
+## 🚀 Key Features
 
-1. **Monitoring Real-time Multi-Motor**: Memantau tegangan ($V$), arus ($I$), daya ($P$), power factor ($PF$), frekuensi ($Hz$), serta estimasi nilai kapasitansi ($\mu\text{F}$) dan persentase error.
-2. **Kesehatan Internal ESP32**: Pemantauan suhu internal chip ESP32 dengan ambang batas peringatan (*overheating protection*).
-3. **Ketahanan Jaringan (Offline Buffer)**: Penyimpanan lokal di flash ESP32 (LittleFS) saat koneksi WiFi putus, dengan pengiriman otomatis (*auto-flush*) saat kembali online.
-4. **Duty Cycle Berbasis Jam Nyata**: Sinkronisasi waktu NTP (WIB) dengan siklus 30 menit deteksi aktif dan 30 menit standby.
-5. **Live Data Streaming (SSE)**: Dashboard browser diperbarui secara instan via Server-Sent Events tanpa *page refresh*.
-6. **Autentikasi & Keamanan Enterprise**: Pembatasan domain email resmi perusahaan, proteksi JWT, dan pencatatan audit log di SQLite.
-7. **Ekspor Laporan PDF**: Pembuatan laporan kondisi mesin dan motor secara otomatis dalam format PDF resmi berlogo perusahaan.
+1. **Real-Time Multi-Motor Monitoring**: Monitors voltage ($V$), current ($A$), active power ($W$), power factor ($PF$), frequency ($Hz$), operational status, and health metrics across industrial motors.
+2. **ESP32 Internal Health Diagnostics**: Real-time internal chip temperature monitoring with automated overheating alert thresholds.
+3. **Network Resilience (Offline Flash Buffer)**: Local data persistence on ESP32 flash memory (LittleFS) during network outages, featuring automated batch synchronization (auto-flush) upon reconnection.
+4. **Real-Time Clock & Duty Cycle Synchronization**: NTP-synchronized duty cycle management (e.g., 30-minute active inspection cycle per 1-hour interval).
+5. **Live Data Streaming (SSE)**: Instant browser dashboard updates via Server-Sent Events without requiring manual page reloads.
+6. **Enterprise Authentication & Security**: Company email domain whitelist restrictions, robust JWT token protection, and persistent SQLite audit trails.
+7. **Automated PDF Export**: Generates official industrial report documents with corporate branding for machines and motor units.
 
 ---
 
-## 🛠️ Panduan Memulai
+## 🛠️ Getting Started
 
-### 1. Menjalankan Dashboard Web
+### 1. Running the Web Dashboard
 
-Masuk ke folder `dashboard`:
+Navigate to the `dashboard` directory:
 ```bash
 cd dashboard
 npm install
 npm start
 ```
-Buka browser di: `http://localhost:3000`
+Open your browser and visit: `http://localhost:3000`
 
-### 2. Memprogram ESP32
+### 2. Flashing the ESP32 Firmware
 
-1. Buka file `ESP32_PZEM004T/ESP32_PZEM004T.ino` menggunakan Arduino IDE atau VS Code (PlatformIO).
-2. Pasang library yang dibutuhkan:
+1. Open `ESP32_PZEM004T/ESP32_PZEM004T.ino` in Arduino IDE or VS Code (PlatformIO).
+2. Install the required libraries:
    - `PZEM004Tv30`
    - `ArduinoJson`
    - `LittleFS`
-3. Sesuaikan konfigurasi SSID WiFi dan IP server pada file `.ino`.
-4. Unggah (*flash*) ke modul ESP32.
+3. Configure your WiFi credentials (SSID & password) and server ingestion endpoint in the `.ino` file or via the on-board Captive Portal.
+4. Compile and flash the code to the ESP32 module.
 
 ---
 
-## 📜 Lisensi & Hak Cipta
-Dikembangkan untuk proyek monitoring industri PT Bekaert Indonesia bekerjasama dengan Politeknik Negeri Bandung.
+## 📜 License & Intellectual Property
+Developed for the industrial monitoring initiative at PT Bekaert Indonesia in collaboration with Politeknik Negeri Bandung (POLBAN).

@@ -32,13 +32,8 @@
         <div class="login-logo-icon" id="loginFallbackIcon" style="display:none;">B</div>
         <div class="login-logo-text">
           <div class="login-company">IoT Maintenance DWD</div>
-          <div class="login-system">Motor Capacitor Monitoring System</div>
+          <div class="login-system">MOTOR STIRRER MONITORING SYSTEM</div>
         </div>
-      </div>
-
-      <div class="auth-tabs">
-        <button class="auth-tab active" id="tabLogin" data-tab="login">Masuk</button>
-        <button class="auth-tab" id="tabRegister" data-tab="register">Daftar Baru</button>
       </div>
 
       <!-- LOGIN FORM -->
@@ -55,33 +50,6 @@
           </div>
         </div>
         <button type="submit" class="login-btn" id="btnLogin">🔐 MASUK KE DASHBOARD</button>
-      </form>
-
-      <!-- REGISTER FORM -->
-      <form id="registerForm" style="display:none;" autocomplete="on">
-        <div class="domain-notice">
-          ⓘ Registrasi hanya tersedia untuk karyawan dengan email perusahaan berdomain <strong>@polban.ac.id</strong> atau <strong>@bekaert.com</strong>.
-        </div>
-        <div class="login-field">
-          <label for="regUsername">Username</label>
-          <input type="text" id="regUsername" name="username" placeholder="min. 3 karakter" autocomplete="username" required />
-        </div>
-        <div class="login-field">
-          <label for="regEmail">Email Perusahaan</label>
-          <input type="email" id="regEmail" name="email" placeholder="nama@bekaert.com" autocomplete="email" required />
-        </div>
-        <div class="login-field">
-          <label for="regDisplayName">Nama Tampilan</label>
-          <input type="text" id="regDisplayName" name="displayName" placeholder="Nama lengkap Anda" autocomplete="name" />
-        </div>
-        <div class="login-field">
-          <label for="regPassword">Password</label>
-          <div class="password-wrapper">
-            <input type="password" id="regPassword" name="new-password" placeholder="min. 4 karakter" autocomplete="new-password" required />
-            <button type="button" class="toggle-password" data-target="regPassword" title="Lihat Password">👁️</button>
-          </div>
-        </div>
-        <button type="submit" class="login-btn" id="btnRegister">📝 DAFTAR & MASUK</button>
       </form>
 
       <div class="login-error" id="loginError"></div>
