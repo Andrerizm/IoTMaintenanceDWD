@@ -33,7 +33,7 @@ router.post('/ingest', async (req, res) => {
     let espTempWarning = 70.0;
     let espTempDanger = 80.0;
     try {
-      const { rows: sRows } = await db.query('SELECT key, value FROM settings');
+      const { rows: sRows } = await db.query('SELECT `key`, value FROM settings');
       sRows.forEach(r => {
         if (r.key === 'warning_limit') warningLimit = parseFloat(r.value) || 5.0;
         else if (r.key === 'danger_limit') dangerLimit = parseFloat(r.value) || 10.0;
@@ -55,8 +55,8 @@ router.post('/ingest', async (req, res) => {
     // Update tabel motors
     const updateRes = await db.query(`
       UPDATE motors
-      SET current = $1, voltage = $2, capacitance = $3, power = $4, pf = $5, error = $6, esp_temp = $7, motor_status = $8, status = $9, updated_at = $10
-      WHERE id = $11
+      SET current = ?, voltage = ?, capacitance = ?, power = ?, pf = ?, error = ?, esp_temp = ?, motor_status = ?, status = ?, updated_at = ?
+      WHERE id = ?
     `, [current, voltage, estimatedCap, power, pf, error, espTemp, motorStatus, status, updatedAt, motorId]);
 
     if (updateRes.rowCount === 0) {
@@ -66,16 +66,15 @@ router.post('/ingest', async (req, res) => {
       const defaultName = `Motor Stirrer ${String(motorNo).padStart(2, '0')}`;
 
       await db.query(`
-        INSERT INTO motors (id, machine_id, motor_number, name, nominal_cap, current, voltage, power, pf, capacitance, error, esp_temp, motor_status, status, updated_at)
-        VALUES ($1, $2, $3, $4, 2.0, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT (id) DO NOTHING
+        INSERT IGNORE INTO motors (id, machine_id, motor_number, name, nominal_cap, current, voltage, power, pf, capacitance, error, esp_temp, motor_status, status, updated_at)
+        VALUES (?, ?, ?, ?, 2.0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [motorId, machineId, motorNo, defaultName, current, voltage, power, pf, estimatedCap, error, espTemp, motorStatus, status, updatedAt]);
     }
 
     // Insert ke telemetry history
     await db.query(`
       INSERT INTO telemetry_history (motor_id, capacitance, current, voltage, power, pf, esp_temp, timestamp)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [motorId, Number(estimatedCap.toFixed(2)), Number(current.toFixed(3)), Number(voltage.toFixed(1)), Number(power.toFixed(2)), Number(pf.toFixed(2)), Number(espTemp.toFixed(1)), timestampIso]);
 
     // Broadcast data baru ke semua browser via SSE

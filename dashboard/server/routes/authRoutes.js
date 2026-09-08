@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
     
     // Query ke DB berdasarkan username atau email
     const { rows } = await db.query(
-      'SELECT * FROM users WHERE LOWER(username) = $1 OR LOWER(email) = $2',
+      'SELECT * FROM users WHERE LOWER(username) = ? OR LOWER(email) = ?',
       [cleanIdentifier, cleanIdentifier]
     );
     const user = rows[0];
@@ -103,7 +103,7 @@ router.post('/register', async (req, res) => {
 
     // Cek keunikan username dan email
     const checkRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = $1 OR LOWER(email) = $2',
+      'SELECT id FROM users WHERE LOWER(username) = ? OR LOWER(email) = ?',
       [cleanUsername, cleanEmail]
     );
     if (checkRes.rows.length > 0) {
@@ -116,11 +116,10 @@ router.post('/register', async (req, res) => {
 
     const insertRes = await db.query(
       `INSERT INTO users (username, email, password_hash, role, display_name, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       RETURNING id`,
+       VALUES (?, ?, ?, ?, ?, NOW())`,
       [cleanUsername, cleanEmail, passwordHash, defaultRole, displayName || cleanUsername]
     );
-    const newId = insertRes.rows[0].id;
+    const newId = insertRes.insertId;
 
     const payload = {
       id: Number(newId),

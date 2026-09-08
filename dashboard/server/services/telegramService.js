@@ -276,9 +276,9 @@ async function handleCekMotor(chatId, machineId, motorNo) {
   try {
     const { rows } = await db.query(
       `SELECT * FROM motors 
-       WHERE (machine_id = $1 AND motor_number = $2) 
-          OR id = $3 
-          OR id = $4
+       WHERE (machine_id = ? AND motor_number = ?) 
+          OR id = ? 
+          OR id = ?
        ORDER BY id LIMIT 1`,
       [machineId, motorNo, `${machineId}-${motorNo}`, `${machineId}-${String(motorNo).padStart(2, '0')}`]
     );

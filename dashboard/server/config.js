@@ -15,11 +15,11 @@ module.exports = {
   // Path database SQLite (legacy backup)
   DB_PATH: process.env.DB_PATH || path.join(__dirname, '../database.sqlite'),
 
-  // Konfigurasi PostgreSQL
+  // Konfigurasi MySQL
   DB_HOST: process.env.DB_HOST || 'localhost',
-  DB_PORT: parseInt(process.env.DB_PORT || '5432', 10),
+  DB_PORT: parseInt(process.env.DB_PORT || '3306', 10),
   DB_NAME: process.env.DB_NAME || 'iot_maintenance_dwd',
-  DB_USER: process.env.DB_USER || 'postgres',
+  DB_USER: process.env.DB_USER || 'root',
   DB_PASSWORD: process.env.DB_PASSWORD || '',
 
   // Konfigurasi Telegram Bot Alert

@@ -51,7 +51,7 @@ router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), async (r
 
     // Check unique username / email
     const checkRes = await db.query(
-      'SELECT id FROM users WHERE LOWER(username) = $1 OR LOWER(email) = $2',
+      'SELECT id FROM users WHERE LOWER(username) = ? OR LOWER(email) = ?',
       [cleanUsername, cleanEmail]
     );
     if (checkRes.rows.length > 0) {
@@ -62,7 +62,7 @@ router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), async (r
 
     await db.query(
       `INSERT INTO users (username, email, password_hash, role, display_name, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
+       VALUES (?, ?, ?, ?, ?, NOW())`,
       [cleanUsername, cleanEmail, passwordHash, role, displayName || cleanUsername]
     );
 
@@ -88,13 +88,13 @@ router.post('/:username/reset-password', authenticateToken, requireRole('Admin')
       return res.status(400).json({ success: false, error: 'Password minimal 4 karakter.' });
     }
 
-    const userRes = await db.query('SELECT id FROM users WHERE LOWER(username) = $1', [username]);
+    const userRes = await db.query('SELECT id FROM users WHERE LOWER(username) = ?', [username]);
     if (userRes.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'User tidak ditemukan.' });
     }
 
     const passwordHash = bcrypt.hashSync(newPassword, 10);
-    await db.query('UPDATE users SET password_hash = $1 WHERE LOWER(username) = $2', [passwordHash, username]);
+    await db.query('UPDATE users SET password_hash = ? WHERE LOWER(username) = ?', [passwordHash, username]);
 
     logAudit(req, 'USER_MGMT_RESET_PW', `Password direset untuk user: ${username}`);
 
@@ -123,7 +123,7 @@ router.post('/:username/role', authenticateToken, requireRole('Admin'), async (r
       return res.status(400).json({ success: false, error: 'Tidak dapat mengubah role akun sendiri.' });
     }
 
-    const updateRes = await db.query('UPDATE users SET role = $1 WHERE LOWER(username) = $2', [role, username]);
+    const updateRes = await db.query('UPDATE users SET role = ? WHERE LOWER(username) = ?', [role, username]);
 
     if (updateRes.rowCount === 0) {
       return res.status(404).json({ success: false, error: 'User tidak ditemukan.' });
@@ -150,7 +150,7 @@ router.delete('/:username', authenticateToken, requireRole('Admin'), async (req,
       return res.status(400).json({ success: false, error: 'Tidak dapat menghapus akun sendiri.' });
     }
 
-    const delRes = await db.query('DELETE FROM users WHERE LOWER(username) = $1', [username]);
+    const delRes = await db.query('DELETE FROM users WHERE LOWER(username) = ?', [username]);
 
     if (delRes.rowCount === 0) {
       return res.status(404).json({ success: false, error: 'User tidak ditemukan.' });

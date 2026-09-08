@@ -42,7 +42,7 @@ async function simulateCycle() {
   let warningLimit = 5.0;
   let dangerLimit = 10.0;
   try {
-    const { rows: sRows } = await db.query('SELECT key, value FROM settings');
+    const { rows: sRows } = await db.query('SELECT `key`, value FROM settings');
     sRows.forEach(r => {
       if (r.key === 'warning_limit') warningLimit = parseFloat(r.value) || 5.0;
       else if (r.key === 'danger_limit') dangerLimit = parseFloat(r.value) || 10.0;
@@ -51,7 +51,7 @@ async function simulateCycle() {
 
   const client = await db.pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query('START TRANSACTION');
 
     for (const m of motors) {
       const motorStatus = Math.random() < 0.12 ? 'OFF' : 'ON';
@@ -85,13 +85,13 @@ async function simulateCycle() {
 
       await client.query(`
         UPDATE motors
-        SET current = $1, voltage = $2, capacitance = $3, power = $4, pf = $5, error = $6, esp_temp = $7, motor_status = $8, status = $9, updated_at = $10
-        WHERE id = $11
+        SET current = ?, voltage = ?, capacitance = ?, power = ?, pf = ?, error = ?, esp_temp = ?, motor_status = ?, status = ?, updated_at = ?
+        WHERE id = ?
       `, [current, voltage, capacitance, power, pf, error, espTemp, motorStatus, status, timeStr, m.id]);
 
       await client.query(`
         INSERT INTO telemetry_history (motor_id, capacitance, current, voltage, power, pf, esp_temp, timestamp)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [m.id, Number(capacitance.toFixed(2)), Number(current.toFixed(3)), Number(voltage.toFixed(1)), power, pf, espTemp, timestampIso]);
     }
 

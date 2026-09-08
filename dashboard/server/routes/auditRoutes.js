@@ -15,11 +15,11 @@ router.get('/', authenticateToken, requireRole('Admin'), async (req, res) => {
 
     if (action) {
       params.push(`%${action.toLowerCase()}%`);
-      conditions.push(`LOWER(action) LIKE $${params.length}`);
+      conditions.push('LOWER(action) LIKE ?');
     }
     if (username) {
       params.push(`%${username.toLowerCase()}%`);
-      conditions.push(`LOWER(username) LIKE $${params.length}`);
+      conditions.push('LOWER(username) LIKE ?');
     }
 
     if (conditions.length > 0) {
@@ -27,7 +27,7 @@ router.get('/', authenticateToken, requireRole('Admin'), async (req, res) => {
     }
 
     params.push(Number(limit));
-    query += ` ORDER BY timestamp DESC LIMIT $${params.length}`;
+    query += ' ORDER BY timestamp DESC LIMIT ?';
 
     const { rows: logs } = await db.query(query, params);
 

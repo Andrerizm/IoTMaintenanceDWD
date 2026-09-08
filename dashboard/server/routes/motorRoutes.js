@@ -53,7 +53,7 @@ router.get('/machines/:machineId/motors', authenticateToken, async (req, res) =>
   try {
     const machineId = Number(req.params.machineId);
     const { rows: motors } = await db.query(
-      'SELECT * FROM motors WHERE machine_id = $1 ORDER BY motor_number ASC',
+      'SELECT * FROM motors WHERE machine_id = ? ORDER BY motor_number ASC',
       [machineId]
     );
 
@@ -87,7 +87,7 @@ router.get('/machines/:machineId/motors', authenticateToken, async (req, res) =>
 // GET /api/motors/:id
 router.get('/motors/:id', authenticateToken, async (req, res) => {
   try {
-    const { rows } = await db.query('SELECT * FROM motors WHERE id = $1', [req.params.id]);
+    const { rows } = await db.query('SELECT * FROM motors WHERE id = ?', [req.params.id]);
     const m = rows[0];
 
     if (!m) {
@@ -127,16 +127,16 @@ router.get('/motors/:id/history', authenticateToken, async (req, res) => {
     const { from, to } = req.query;
     const MAX_POINTS = 500;
 
-    const conditions = ['motor_id = $1'];
+    const conditions = ['motor_id = ?'];
     const params = [motorId];
 
     if (from) {
       params.push(from);
-      conditions.push(`timestamp >= $${params.length}`);
+      conditions.push('timestamp >= ?');
     }
     if (to) {
       params.push(to);
-      conditions.push(`timestamp <= $${params.length}`);
+      conditions.push('timestamp <= ?');
     }
 
     const whereClause = 'WHERE ' + conditions.join(' AND ');
@@ -187,7 +187,7 @@ router.post('/motors', authenticateToken, requireRole('Admin', 'Supervisor'), as
   try {
     await db.query(
       `INSERT INTO motors (id, machine_id, motor_number, name, nominal_cap, current, voltage, power, pf, capacitance, error, esp_temp, motor_status, status, updated_at)
-       VALUES ($1, $2, $3, $4, $5, 0, 0, 0, 0, $6, 0, 25.0, 'OFF', 'OFF', $7)`,
+       VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, ?, 0, 25.0, 'OFF', 'OFF', ?)`,
       [id, mId, mNo, motorName, nomCap, nomCap, updatedAt]
     );
 
@@ -199,7 +199,7 @@ router.post('/motors', authenticateToken, requireRole('Admin', 'Supervisor'), as
       motor: { id, machineId: mId, motorNo: mNo, name: motorName, nominal: nomCap }
     });
   } catch (err) {
-    if (err.code === '23505' || err.message.includes('unique') || err.message.includes('duplicate')) {
+    if (err.code === 'ER_DUP_ENTRY' || err.errno === 1062 || err.code === '23505' || err.message.includes('unique') || err.message.includes('duplicate')) {
       return res.status(400).json({ success: false, error: `Motor dengan ID '${id}' sudah ada di database.` });
     }
     console.error('Create motor error:', err);
@@ -211,7 +211,7 @@ router.post('/motors', authenticateToken, requireRole('Admin', 'Supervisor'), as
 router.delete('/motors/:id', authenticateToken, requireRole('Admin'), async (req, res) => {
   const motorId = req.params.id;
   try {
-    const result = await db.query('DELETE FROM motors WHERE id = $1', [motorId]);
+    const result = await db.query('DELETE FROM motors WHERE id = ?', [motorId]);
     if (result.rowCount === 0) {
       return res.status(404).json({ success: false, error: `Motor ID '${motorId}' tidak ditemukan.` });
     }

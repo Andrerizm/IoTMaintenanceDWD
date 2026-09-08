@@ -10,13 +10,15 @@ function logAudit(req, action, details) {
 
   db.query(
     `INSERT INTO audit_logs (id, timestamp, username, role, action, details, ip_address)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [id, timestamp, username, role, action, details || '', String(ip)]
   ).then(() => {
     // Trim audit logs jika lebih dari 1000 baris
     return db.query(`
       DELETE FROM audit_logs WHERE id NOT IN (
-        SELECT id FROM audit_logs ORDER BY timestamp DESC LIMIT 1000
+        SELECT id FROM (
+          SELECT id FROM audit_logs ORDER BY timestamp DESC LIMIT 1000
+        ) AS tmp
       )
     `);
   }).catch(err => {

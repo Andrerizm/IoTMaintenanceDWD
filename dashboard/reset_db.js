@@ -1,13 +1,19 @@
-const { DatabaseSync } = require('node:sqlite');
-const path = require('path');
-const db = new DatabaseSync(path.join(__dirname, 'database.sqlite'));
+const db = require('./server/database');
 
-db.exec('PRAGMA journal_mode = WAL;');
-db.exec('PRAGMA busy_timeout = 5000;');
+async function reset() {
+  try {
+    await db.query('DELETE FROM telemetry_history;');
+    await db.query(`
+      UPDATE motors 
+      SET current = 0, voltage = 0, capacitance = 0, power = 0, pf = 0, error = 0, motor_status = 'OFF', status = 'OFF';
+    `);
+    console.log('[MySQL] Database reset to empty telemetry state successfully.');
+    process.exit(0);
+  } catch (err) {
+    console.error('[MySQL] Error resetting database:', err.message);
+    process.exit(1);
+  }
+}
 
-db.exec(`
-  DELETE FROM telemetry_history;
-  UPDATE motors 
-  SET current = 0, voltage = 0, capacitance = 0, power = 0, pf = 0, error = 0, motor_status = 'OFF', status = 'OFF';
-`);
-console.log('Database reset to empty state');
+// Berikan jeda inisialisasi pool
+setTimeout(reset, 1200);

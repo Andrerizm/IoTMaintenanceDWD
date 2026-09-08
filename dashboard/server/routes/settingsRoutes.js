@@ -6,7 +6,7 @@ const { logAudit } = require('../middleware/audit');
 
 // Helper to fetch settings object
 async function getSettingsObj() {
-  const { rows } = await db.query('SELECT key, value FROM settings');
+  const { rows } = await db.query('SELECT `key`, value FROM settings');
   const settings = {
     warningLimit: 5.0,
     dangerLimit: 10.0,
@@ -66,9 +66,9 @@ router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), async (r
 
   const client = await db.pool.connect();
   try {
-    const upsertQuery = 'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value';
+    const upsertQuery = 'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)';
 
-    await client.query('BEGIN');
+    await client.query('START TRANSACTION');
     await client.query(upsertQuery, ['warning_limit', String(wLimit)]);
     await client.query(upsertQuery, ['danger_limit', String(dLimit)]);
     await client.query(upsertQuery, ['esp_temp_warning', String(tWarn)]);
