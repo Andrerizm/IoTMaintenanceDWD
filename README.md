@@ -36,6 +36,7 @@ A real-time IoT-based Industrial Motor Stirrer Monitoring System designed for wi
 5. **Live Data Streaming (SSE)**: Instant browser dashboard updates via Server-Sent Events without requiring manual page reloads.
 6. **Enterprise Authentication & Security**: Company email domain whitelist restrictions, robust JWT token protection, and persistent SQLite audit trails.
 7. **Automated PDF Export**: Generates official industrial report documents with corporate branding for machines and motor units.
+8. **Telegram Bot Alarm & 2-Way Interactive Control**: Instant industrial alert notifications (overheat, jammed rotor, low PF, disconnects) and interactive on-demand telemetry queries directly via Telegram chat bot.
 
 ---
 

@@ -5,8 +5,8 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { logAudit } = require('../middleware/audit');
 
 // Helper to fetch settings object
-function getSettingsObj() {
-  const rows = db.prepare('SELECT key, value FROM settings').all();
+async function getSettingsObj() {
+  const { rows } = await db.query('SELECT key, value FROM settings');
   const settings = {
     warningLimit: 5.0,
     dangerLimit: 10.0,
@@ -26,20 +26,21 @@ function getSettingsObj() {
 }
 
 // GET /api/settings — Any Authenticated User
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const settings = getSettingsObj();
+    const settings = await getSettingsObj();
     res.json({
       success: true,
       settings
     });
   } catch (err) {
+    console.error('Get settings error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // POST /api/settings — Admin & Supervisor Only
-router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), (req, res) => {
+router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), async (req, res) => {
   const { warningLimit, dangerLimit, espTempWarning, espTempDanger } = req.body;
 
   if (warningLimit === undefined || dangerLimit === undefined || espTempWarning === undefined || espTempDanger === undefined) {
@@ -63,27 +64,31 @@ router.post('/', authenticateToken, requireRole('Admin', 'Supervisor'), (req, re
     return res.status(400).json({ success: false, error: 'Batas Warning Suhu ESP32 harus lebih kecil daripada Batas Danger Suhu.' });
   }
 
+  const client = await db.pool.connect();
   try {
-    const upsertStmt = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+    const upsertQuery = 'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET value = EXCLUDED.value';
 
-    db.exec('BEGIN TRANSACTION;');
-    upsertStmt.run('warning_limit', String(wLimit));
-    upsertStmt.run('danger_limit', String(dLimit));
-    upsertStmt.run('esp_temp_warning', String(tWarn));
-    upsertStmt.run('esp_temp_danger', String(tDang));
-    db.exec('COMMIT;');
+    await client.query('BEGIN');
+    await client.query(upsertQuery, ['warning_limit', String(wLimit)]);
+    await client.query(upsertQuery, ['danger_limit', String(dLimit)]);
+    await client.query(upsertQuery, ['esp_temp_warning', String(tWarn)]);
+    await client.query(upsertQuery, ['esp_temp_danger', String(tDang)]);
+    await client.query('COMMIT');
 
     logAudit(req, 'SETTINGS_UPDATE', `Ambang batas diperbarui: Error (Warn: ${wLimit}%, Dang: ${dLimit}%), Temp (Warn: ${tWarn}°C, Dang: ${tDang}°C)`);
 
-    const updatedSettings = getSettingsObj();
+    const updatedSettings = await getSettingsObj();
     res.json({
       success: true,
       message: 'Ambang batas alarm berhasil diperbarui.',
       settings: updatedSettings
     });
   } catch (err) {
-    db.exec('ROLLBACK;');
+    await client.query('ROLLBACK');
+    console.error('Update settings error:', err);
     res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 

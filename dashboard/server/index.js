@@ -31,6 +31,8 @@ app.get('*', (req, res, next) => {
 // Start Background Simulator
 // startSimulation(6); // Dimatikan agar menerima data asli dari ESP32
 
+const { startTelegramBotListener } = require('./services/telegramService');
+
 // Start Server
 app.listen(config.PORT, () => {
   console.log('============================================================');
@@ -40,4 +42,7 @@ app.listen(config.PORT, () => {
   console.log(`🔒 Domain Email : ${config.ALLOWED_EMAIL_DOMAINS.map(d => '@' + d).join(', ')}`);
   console.log(`🔑 Hardware Key : ${config.HARDWARE_API_KEY}`);
   console.log('============================================================');
+
+  // Aktifkan bot interaktif dua arah (menerima perintah chat Telegram)
+  startTelegramBotListener();
 });

@@ -12,6 +12,17 @@ module.exports = {
   // API Key khusus untuk pengiriman data dari hardware (ESP32 / PZEM-004T)
   HARDWARE_API_KEY: process.env.HARDWARE_API_KEY || 'bekaert_pzem004t_ingest_key_8923',
 
-  // Path database SQLite
-  DB_PATH: process.env.DB_PATH || path.join(__dirname, '../database.sqlite')
+  // Path database SQLite (legacy backup)
+  DB_PATH: process.env.DB_PATH || path.join(__dirname, '../database.sqlite'),
+
+  // Konfigurasi PostgreSQL
+  DB_HOST: process.env.DB_HOST || 'localhost',
+  DB_PORT: parseInt(process.env.DB_PORT || '5432', 10),
+  DB_NAME: process.env.DB_NAME || 'iot_maintenance_dwd',
+  DB_USER: process.env.DB_USER || 'postgres',
+  DB_PASSWORD: process.env.DB_PASSWORD || '',
+
+  // Konfigurasi Telegram Bot Alert
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '',
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID || ''
 };
